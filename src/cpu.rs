@@ -46,4 +46,36 @@ impl Cpu {
     pub fn set_pc(&mut self, value: u32) {
         self.registers[15] = value;
     }
+
+    pub fn mov(&mut self, destination: usize, value: u32) {
+        self.registers[destination] = value;
+        self.update_nz(value);
+    }
+
+    pub fn add(&mut self, destination: usize, left: usize, right: usize) {
+        let a = self.registers[left];
+        let b = self.registers[right];
+        let (result, carry) = a.overflowing_add(b);
+
+        self.registers[destination] = result;
+        self.flags.carry = carry;
+        self.flags.overflow = ((a ^ result) & (b ^ result) & 0x8000_0000) != 0;
+        self.update_nz(result);
+    }
+
+    pub fn sub(&mut self, destination: usize, left: usize, right: usize) {
+        let a = self.registers[left];
+        let b = self.registers[right];
+        let (result, borrow) = a.overflowing_sub(b);
+
+        self.registers[destination] = result;
+        self.flags.carry = !borrow;
+        self.flags.overflow = ((a ^ b) & (a ^ result) & 0x8000_0000) != 0;
+        self.update_nz(result);
+    }
+
+    fn update_nz(&mut self, value: u32) {
+        self.flags.zero = value == 0;
+        self.flags.negative = (value & 0x8000_0000) != 0;
+    }
 }
